@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Jobs;
+
+use stdClass;
+use App\Models\User;
+use Illuminate\Bus\Queueable;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Osiset\ShopifyApp\Objects\Values\ShopDomain;
+
+class ShopRedactJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    /**
+     * Create a new job instance.
+     *
+     * @param  ShopDomain  $shopDomain  The shop's myshopify domain
+     * @param  stdClass  $webhook  The webhook data (JSON decoded)
+     * @return self
+     */
+    public function __construct(protected readonly ShopDomain $shopDomain, protected readonly stdClass $data)
+    {
+    }
+
+    /**
+     * Execute the job.
+     *
+     * @return void
+     */
+    public function handle()
+    {
+        rescue(function () {
+            $shop = User::where('name', $this->shopDomain->toNative())->first();
+            if ($shop) {
+                // delete all the related fake data
+                $shop->fakeData()->delete();
+                // delete the shop
+                $shop->delete();
+            }
+        });
+    }
+}
